@@ -387,7 +387,9 @@ const scanAttendance = async (req, res) => {
         barcode: student.barcode,
 
         gradeName: student.grade.name,
+        gradeId: student.grade._id,
         groupName: student.group.name,
+        groupId: student.group._id,
 
         unpaidNotes,
         unpaidMonths,
