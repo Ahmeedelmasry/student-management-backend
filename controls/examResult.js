@@ -77,25 +77,27 @@ const saveExamResults = async (req, res) => {
       });
     }
 
-    const operations = results.map((item) => ({
-      updateOne: {
-        filter: {
-          exam: examId,
-          student: item.student,
+    const operations = results.map((item) => {
+      return {
+        updateOne: {
+          filter: {
+            exam: examId,
+            student: item.student,
+          },
+          update: {
+            exam: examId,
+            student: item.student,
+            grade: item.grade,
+            group: item.group,
+            score: item.score || 0,
+            isAbsent: item.isAbsent || false,
+            notes: item.notes || "",
+            correctedBy: req.user?._id,
+          },
+          upsert: true,
         },
-        update: {
-          exam: examId,
-          student: item.student,
-          grade: item.grade,
-          group: item.group,
-          score: item.score || 0,
-          isAbsent: item.isAbsent || false,
-          notes: item.notes || "",
-          correctedBy: req.user?._id,
-        },
-        upsert: true,
-      },
-    }));
+      };
+    });
 
     await ExamResultSchema.bulkWrite(operations);
 
