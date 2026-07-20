@@ -53,6 +53,12 @@ const ExamResultSchema = new mongoose.Schema(
       default: "",
       trim: true,
     },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
   },
   {
     timestamps: true,

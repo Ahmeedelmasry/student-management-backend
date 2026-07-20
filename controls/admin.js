@@ -56,7 +56,10 @@ const createItem = async (req, res) => {
 
 const updateItem = async (req, res) => {
   try {
-    let user = await AdminSchema.findOne({ _id: req.params.id });
+    let user = await AdminSchema.findOne({
+      _id: req.params.id,
+      isActive: true,
+    });
     //Hash The Password
     if (!user) {
       return res.status(404).json({ message: "المستخدم غير موجود" });
@@ -80,7 +83,10 @@ const updateItem = async (req, res) => {
     }
 
     await AdminSchema.updateOne({ _id: req.params.id }, body);
-    const userAfterSave = await AdminSchema.findOne({ _id: req.params.id });
+    const userAfterSave = await AdminSchema.findOne({
+      _id: req.params.id,
+      isActive: true,
+    });
 
     const userData = {
       _id: req.params.id,
@@ -100,7 +106,14 @@ const updateItem = async (req, res) => {
 
 const deleteItem = async (req, res) => {
   try {
-    await AdminSchema.deleteOne({ _id: req.params.id });
+    await AdminSchema.updateOne(
+      { _id: req.params.id },
+      {
+        $set: {
+          isActive: false,
+        },
+      },
+    );
     res.status(200).json({ message: "تم حذف المستخدم بنجاح" });
   } catch (error) {
     res.status(404).json({ message: "المستخدم غير موجود" });
@@ -121,7 +134,9 @@ const getItem = async (req, res) => {
 // Get User
 const getItems = async (req, res) => {
   try {
-    let query = {};
+    let query = {
+      isActive: true,
+    };
 
     const { searchWord, page = 1, limit = 10 } = req.query;
 

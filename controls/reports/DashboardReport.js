@@ -113,7 +113,9 @@ const getDashboard = async (req, res) => {
       groupQuery._id = group;
     }
 
-    const paymentQuery = {};
+    const paymentQuery = {
+      isActive: true,
+    };
 
     const studentIds = await StudentSchema.find(studentQuery)
       .select("_id")
@@ -654,6 +656,7 @@ const getDashboard = async (req, res) => {
         $gte: todayStart,
         $lte: todayEnd,
       },
+      isActive: true,
     })
       .populate("grade", "name")
       .populate("group", "name")

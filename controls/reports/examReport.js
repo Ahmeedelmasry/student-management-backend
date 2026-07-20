@@ -98,6 +98,7 @@ const getExamReport = async (req, res) => {
 
       ExamResultSchema.find({
         exam: exam._id,
+        isActive: true,
       })
         .select("student score isAbsent notes updatedAt")
         .lean(),

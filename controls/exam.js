@@ -84,17 +84,14 @@ const updateItem = async (req, res) => {
 // Delete
 const deleteItem = async (req, res) => {
   try {
-    const exam = await ExamSchema.findById(req.params.id);
-
-    if (!exam) {
-      return res.status(404).json({
-        message: "الامتحان غير موجود",
-      });
-    }
-
-    await ExamSchema.deleteOne({
-      _id: req.params.id,
-    });
+    await ExamSchema.updateOne(
+      { _id: req.params.id },
+      {
+        $set: {
+          isActive: false,
+        },
+      },
+    );
 
     return res.status(200).json({
       message: "تم حذف الامتحان بنجاح",
@@ -130,7 +127,9 @@ const getItem = async (req, res) => {
 // List
 const getItems = async (req, res) => {
   try {
-    let query = {};
+    let query = {
+      isActive: true,
+    };
 
     const {
       searchWord,

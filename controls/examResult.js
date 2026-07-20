@@ -171,7 +171,7 @@ const getExamStudents = async (req, res) => {
 
     // الطلاب اللي اتسجلت درجاتهم في الامتحان ده
     const savedResults = await ExamResultSchema.find(
-      { exam: examId },
+      { exam: examId, isActive: true },
       "student",
     );
 

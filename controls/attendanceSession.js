@@ -45,7 +45,10 @@ const createItem = async (req, res) => {
 
 const updateItem = async (req, res) => {
   try {
-    let book = await AttendenceSession.findOne({ _id: req.params.id });
+    let book = await AttendenceSession.findOne({
+      _id: req.params.id,
+      isActive: true,
+    });
     if (!book) {
       return res.status(404).json({ message: "المحاضرة غير موجودة" });
     }
@@ -56,6 +59,7 @@ const updateItem = async (req, res) => {
     await AttendenceSession.updateOne({ _id: req.params.id }, body);
     const dataAfterSave = await AttendenceSession.findOne({
       _id: req.params.id,
+      isActive: true,
     });
 
     return res
@@ -69,7 +73,14 @@ const updateItem = async (req, res) => {
 
 const deleteItem = async (req, res) => {
   try {
-    await AttendenceSession.deleteOne({ _id: req.params.id });
+    await AttendenceSession.updateOne(
+      { _id: req.params.id },
+      {
+        $set: {
+          isActive: false,
+        },
+      },
+    );
     res.status(200).json({ message: "تم حذف المحاضرة بنجاح" });
   } catch (error) {
     res.status(404).json({ message: "المحاضرة غير موجودة" });
@@ -136,6 +147,7 @@ const getItems = async (req, res) => {
     const options = {
       page: Number(page),
       limit: Number(limit),
+      isActive: true,
       sort: {
         createdAt: -1,
       },

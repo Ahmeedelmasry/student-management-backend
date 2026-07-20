@@ -17,12 +17,16 @@ const doLogin = async (req, res) => {
     const user = await AdminSchema.findOne({ userName });
 
     if (!user) {
-      return res.status(404).json({ message: "Invalid user name or password" });
+      return res
+        .status(404)
+        .json({ message: "اسم المستخدم او كلمة المرور غير صحيحه" });
     }
 
     const compare = await bcrypt.compare(password, user.password);
     if (!compare) {
-      return res.status(415).json({ message: "Invalid user name or password" });
+      return res
+        .status(415)
+        .json({ message: "اسم المستخدم او كلمة المرور غير صحيحه" });
     }
 
     const cookie = generToken({

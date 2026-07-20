@@ -46,7 +46,10 @@ const createItem = async (req, res) => {
 
 const updateItem = async (req, res) => {
   try {
-    let grade = await PaymentSchema.findOne({ _id: req.params.id });
+    let grade = await PaymentSchema.findOne({
+      _id: req.params.id,
+      isActive: true,
+    });
     if (!grade) {
       return res.status(404).json({ message: "الدفع غير موجود" });
     }
@@ -55,7 +58,10 @@ const updateItem = async (req, res) => {
     };
 
     await PaymentSchema.updateOne({ _id: req.params.id }, body);
-    const dataAfterSave = await PaymentSchema.findOne({ _id: req.params.id });
+    const dataAfterSave = await PaymentSchema.findOne({
+      _id: req.params.id,
+      isActive: true,
+    });
 
     return res
       .status(200)
@@ -68,7 +74,14 @@ const updateItem = async (req, res) => {
 
 const deleteItem = async (req, res) => {
   try {
-    await PaymentSchema.deleteOne({ _id: req.params.id });
+    await PaymentSchema.updateOne(
+      { _id: req.params.id },
+      {
+        $set: {
+          isActive: false,
+        },
+      },
+    );
     res.status(200).json({ message: "تم حذف الدفع بنجاح" });
   } catch (error) {
     res.status(404).json({ message: "الدفع غير موجود" });
@@ -101,7 +114,9 @@ const getItems = async (req, res) => {
       limit = 10,
     } = req.query;
 
-    const query = {};
+    const query = {
+      isActive: true,
+    };
 
     // Search
     if (searchWord) {

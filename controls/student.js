@@ -49,7 +49,10 @@ const createItem = async (req, res) => {
 
 const updateItem = async (req, res) => {
   try {
-    let grade = await StudentSchema.findOne({ _id: req.params.id });
+    let grade = await StudentSchema.findOne({
+      _id: req.params.id,
+      isActive: true,
+    });
     if (!grade) {
       return res.status(404).json({ message: "الطالب غير موجود" });
     }
@@ -58,7 +61,10 @@ const updateItem = async (req, res) => {
     };
 
     await StudentSchema.updateOne({ _id: req.params.id }, body);
-    const dataAfterSave = await StudentSchema.findOne({ _id: req.params.id });
+    const dataAfterSave = await StudentSchema.findOne({
+      _id: req.params.id,
+      isActive: true,
+    });
 
     return res
       .status(200)
@@ -71,7 +77,14 @@ const updateItem = async (req, res) => {
 
 const deleteItem = async (req, res) => {
   try {
-    await StudentSchema.deleteOne({ _id: req.params.id });
+    await StudentSchema.updateOne(
+      { _id: req.params.id },
+      {
+        $set: {
+          isActive: false,
+        },
+      },
+    );
     res.status(200).json({ message: "تم حذف الطالب بنجاح" });
   } catch (error) {
     res.status(404).json({ message: "الطالب غير موجود" });
@@ -90,7 +103,9 @@ const getItem = async (req, res) => {
 
 const getItems = async (req, res) => {
   try {
-    let query = {};
+    let query = {
+      isActive: true,
+    };
 
     const {
       searchWord,
@@ -224,6 +239,7 @@ const scanAttendance = async (req, res) => {
 
     const session = await AttendanceSessionSchema.findOne({
       group: student.group._id,
+      isActive: true,
       sessionDate: {
         $gte: startOfDay,
         $lte: endOfDay,
@@ -243,6 +259,7 @@ const scanAttendance = async (req, res) => {
     const exists = await AttendanceSchema.findOne({
       session: session._id,
       student: student._id,
+      isActive: true,
     });
 
     if (exists) {
@@ -281,12 +298,14 @@ const scanAttendance = async (req, res) => {
         student: student._id,
         type: "Book",
         status: "Paid",
+        isActive: true,
       }).select("book"),
 
       PaymentSchema.find({
         student: student._id,
         type: "Subscription",
         status: "Paid",
+        isActive: true,
       }).select("month year"),
     ]);
 

@@ -45,7 +45,7 @@ const createItem = async (req, res) => {
 
 const updateItem = async (req, res) => {
   try {
-    let book = await BookSchema.findOne({ _id: req.params.id });
+    let book = await BookSchema.findOne({ _id: req.params.id, isActive: true });
     if (!book) {
       return res.status(404).json({ message: "المذكرة غير موجودة" });
     }
@@ -54,7 +54,10 @@ const updateItem = async (req, res) => {
     };
 
     await BookSchema.updateOne({ _id: req.params.id }, body);
-    const dataAfterSave = await BookSchema.findOne({ _id: req.params.id });
+    const dataAfterSave = await BookSchema.findOne({
+      _id: req.params.id,
+      isActive: true,
+    });
 
     return res
       .status(200)
@@ -67,7 +70,14 @@ const updateItem = async (req, res) => {
 
 const deleteItem = async (req, res) => {
   try {
-    await BookSchema.deleteOne({ _id: req.params.id });
+    await BookSchema.updateOne(
+      { _id: req.params.id },
+      {
+        $set: {
+          isActive: false,
+        },
+      },
+    );
     res.status(200).json({ message: "تم حذف المذكرة بنجاح" });
   } catch (error) {
     res.status(404).json({ message: "المذكرة غير موجودة" });
@@ -95,7 +105,9 @@ const getItems = async (req, res) => {
       limit = 10,
     } = req.query;
 
-    const query = {};
+    const query = {
+      isActive: true,
+    };
 
     if (searchWord) {
       query.$or = [
@@ -129,6 +141,7 @@ const getItems = async (req, res) => {
     const options = {
       page: Number(page),
       limit: Number(limit),
+      isActive: true,
       sort: {
         createdAt: -1,
       },

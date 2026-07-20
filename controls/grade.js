@@ -45,7 +45,10 @@ const createItem = async (req, res) => {
 
 const updateItem = async (req, res) => {
   try {
-    let grade = await GradeSchema.findOne({ _id: req.params.id });
+    let grade = await GradeSchema.findOne({
+      _id: req.params.id,
+      isActive: true,
+    });
     if (!grade) {
       return res.status(404).json({ message: "الصف غير موجود" });
     }
@@ -54,7 +57,10 @@ const updateItem = async (req, res) => {
     };
 
     await GradeSchema.updateOne({ _id: req.params.id }, body);
-    const dataAfterSave = await GradeSchema.findOne({ _id: req.params.id });
+    const dataAfterSave = await GradeSchema.findOne({
+      _id: req.params.id,
+      isActive: true,
+    });
 
     return res
       .status(200)
@@ -67,7 +73,14 @@ const updateItem = async (req, res) => {
 
 const deleteItem = async (req, res) => {
   try {
-    await GradeSchema.deleteOne({ _id: req.params.id });
+    await GradeSchema.updateOne(
+      { _id: req.params.id },
+      {
+        $set: {
+          isActive: false,
+        },
+      },
+    );
     res.status(200).json({ message: "تم حذف الصف بنجاح" });
   } catch (error) {
     res.status(404).json({ message: "الصف غير موجود" });
@@ -86,7 +99,9 @@ const getItem = async (req, res) => {
 
 const getItems = async (req, res) => {
   try {
-    let query = {};
+    let query = {
+      isActive: true,
+    };
 
     const { searchWord, page = 1, limit = 10 } = req.query;
 

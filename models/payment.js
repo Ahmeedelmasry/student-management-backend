@@ -76,6 +76,12 @@ const PaymentSchema = new mongoose.Schema(
       default: "",
       trim: true,
     },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
   },
   {
     timestamps: true,
@@ -97,7 +103,6 @@ PaymentSchema.index(
     },
   },
 );
-
 
 PaymentSchema.plugin(mongoosePaginate);
 

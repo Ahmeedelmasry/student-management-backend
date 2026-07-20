@@ -64,7 +64,9 @@ const getAttendanceReport = async (req, res) => {
     // Sessions Query
     // ==========================
 
-    const sessionQuery = {};
+    const sessionQuery = {
+      isActive: true,
+    };
 
     if (grade) {
       sessionQuery.grade = grade;
@@ -128,6 +130,7 @@ const getAttendanceReport = async (req, res) => {
       session: {
         $in: sessions.map((e) => e._id),
       },
+      isActive: true,
     }).lean();
 
     // ==========================
@@ -319,6 +322,7 @@ const getStudentAttendanceDetails = async (req, res) => {
 
     const sessionQuery = {
       group: group || student.group._id,
+      isActive: true,
     };
 
     if (grade) {
@@ -348,6 +352,7 @@ const getStudentAttendanceDetails = async (req, res) => {
 
     const attendances = await AttendanceSchema.find({
       student: student._id,
+      isActive: true,
       session: {
         $in: sessions.map((e) => e._id),
       },

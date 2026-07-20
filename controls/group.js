@@ -96,9 +96,14 @@ const deleteItem = async (req, res) => {
       });
     }
 
-    await GroupSchema.deleteOne({
-      _id: req.params.id,
-    });
+    await GroupSchema.updateOne(
+      { _id: req.params.id },
+      {
+        $set: {
+          isActive: false,
+        },
+      },
+    );
 
     return res.status(200).json({
       message: "تم حذف المجموعة بنجاح",
@@ -135,7 +140,9 @@ const getItem = async (req, res) => {
 // Get List
 const getItems = async (req, res) => {
   try {
-    let query = {};
+    let query = {
+      isActive: true,
+    };
 
     const {
       searchWord,
