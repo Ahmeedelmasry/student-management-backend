@@ -51,6 +51,10 @@ const getExamReport = async (req, res) => {
       group: {
         $in: exam.groups.map((g) => g._id),
       },
+
+      registrationDate: {
+        $lt: exam.createdAt,
+      },
     };
 
     if (group) {

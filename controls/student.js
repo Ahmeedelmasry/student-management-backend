@@ -1,6 +1,7 @@
 const StudentSchema = require("../models/student.js");
 const AttendanceSessionSchema = require("../models/attendanceSession");
 const AttendanceSchema = require("../models/attendance");
+const ExamResultSchema = require("../models/examResult.js");
 const PaymentSchema = require("../models/payment");
 const BookSchema = require("../models/book");
 const bcrypt = require("bcrypt");
@@ -77,14 +78,49 @@ const updateItem = async (req, res) => {
 
 const deleteItem = async (req, res) => {
   try {
-    await StudentSchema.updateOne(
-      { _id: req.params.id },
-      {
-        $set: {
-          isActive: false,
+    await Promise.all([
+      StudentSchema.updateOne(
+        { _id: req.params.id },
+        {
+          $set: {
+            isActive: false,
+          },
         },
-      },
-    );
+      ),
+
+      PaymentSchema.updateMany(
+        {
+          student: req.params.id,
+        },
+        {
+          $set: {
+            isActive: false,
+          },
+        },
+      ),
+
+      AttendanceSchema.updateMany(
+        {
+          student: req.params.id,
+        },
+        {
+          $set: {
+            isActive: false,
+          },
+        },
+      ),
+
+      ExamResultSchema.updateMany(
+        {
+          student: req.params.id,
+        },
+        {
+          $set: {
+            isActive: false,
+          },
+        },
+      ),
+    ]);
     res.status(200).json({ message: "تم حذف الطالب بنجاح" });
   } catch (error) {
     res.status(404).json({ message: "الطالب غير موجود" });

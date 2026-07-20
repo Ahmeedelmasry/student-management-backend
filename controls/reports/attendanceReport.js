@@ -213,9 +213,14 @@ const getAttendanceReport = async (req, res) => {
             title: "ضعيف",
             color: "orange",
           };
+        } else if (attendanceRate > 0 && attendanceRate < 50) {
+          attendanceStatus = {
+            title: "ضعيف جدا",
+            color: "red",
+          };
         } else {
           attendanceStatus = {
-            title: "منعدم",
+            title: "منقطع",
             color: "red",
           };
         }

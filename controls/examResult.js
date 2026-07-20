@@ -20,6 +20,7 @@ const getExamResults = async (req, res) => {
 
     let query = {
       exam: examId,
+      isActive: true,
     };
 
     // فلترة بالمجموعات

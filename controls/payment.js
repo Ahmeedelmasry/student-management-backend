@@ -212,7 +212,7 @@ const getItems = async (req, res) => {
       populate: [
         {
           path: "student",
-          select: "fullName barcode studentPhone parentPhone",
+          select: "fullName barcode studentPhone parentPhone isActive",
         },
         {
           path: "grade",

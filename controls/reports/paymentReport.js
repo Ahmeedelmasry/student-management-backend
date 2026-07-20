@@ -155,7 +155,7 @@ const getPaymentsReport = async (req, res) => {
 
           itemId: book._id,
 
-          amount: payment?.amount || student.group.monthlyPrice || book.price,
+          amount: book.price || student.group?.monthlyPrice || payment?.amount,
 
           status: payment ? payment.status : "Unpaid",
 
