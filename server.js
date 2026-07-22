@@ -23,6 +23,7 @@ const exam = require("./routes/exam");
 const examResult = require("./routes/examResult");
 const attendanceSession = require("./routes/attendanceSession.js");
 const reports = require("./routes/reports.js");
+const bookAssignment = require("./routes/bookAssignment.js");
 
 // Set Headers
 app.use((req, res, next) => {
@@ -54,6 +55,7 @@ app.use("/groups", group);
 app.use("/students", student);
 app.use("/payments", payment);
 app.use("/books", book);
+app.use("/book-assignments", bookAssignment);
 app.use("/exams", exam);
 app.use("/exam-results", examResult);
 app.use("/sessions", attendanceSession);
