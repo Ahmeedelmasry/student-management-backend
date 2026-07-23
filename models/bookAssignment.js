@@ -5,14 +5,14 @@ const BookAssignmentSchema = new mongoose.Schema(
   {
     student: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "students",
+      ref: "student",
       required: true,
       index: true,
     },
 
     book: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "books",
+      ref: "book",
       required: true,
       index: true,
     },

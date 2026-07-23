@@ -1,6 +1,7 @@
 const StudentSchema = require("../../models/student");
 const PaymentSchema = require("../../models/payment");
 const BookSchema = require("../../models/book");
+const BookAssignmentSchema = require("../../models/bookAssignment.js");
 
 const getPaymentsReport = async (req, res) => {
   try {
@@ -67,16 +68,16 @@ const getPaymentsReport = async (req, res) => {
     // Load All Needed Data
     // ==========================================
 
-    const [students, books, payments] = await Promise.all([
+    const [students, bookAssignments, payments] = await Promise.all([
       StudentSchema.find(studentQuery)
         .populate("grade")
         .populate("group", "name monthlyPrice startDate endDate")
         .lean(),
 
-      BookSchema.find({
+      BookAssignmentSchema.find({
         isActive: true,
       })
-        .select("name price grade group")
+        .populate("book", "name price")
         .lean(),
 
       PaymentSchema.find({}).populate("book", "name").lean(),
@@ -133,11 +134,14 @@ const getPaymentsReport = async (req, res) => {
       // Books
       // ==========================================
 
-      const studentBooks = books.filter(
-        (book) => book.grade.toString() === student.grade._id.toString(),
+      const studentBooks = bookAssignments.filter(
+        (assignment) =>
+          assignment.student.toString() === student._id.toString() &&
+          assignment.book,
       );
 
-      for (const book of studentBooks) {
+      for (const assignment of studentBooks) {
+        const book = assignment.book;
         const payment = paymentMap[`book_${student._id}_${book._id}`];
 
         const row = {
@@ -155,7 +159,7 @@ const getPaymentsReport = async (req, res) => {
 
           itemId: book._id,
 
-          amount: book.price || student.group?.monthlyPrice || payment?.amount,
+          amount: book.price,
 
           status: payment ? payment.status : "Unpaid",
 
@@ -166,6 +170,7 @@ const getPaymentsReport = async (req, res) => {
           year: null,
 
           payment,
+          assignedAt: assignment.assignedAt,
         };
 
         // -----------------------

@@ -1,9 +1,10 @@
 const StudentSchema = require("../models/student.js");
+const BookAssignmentSchema = require("../models/bookAssignment.js");
 const AttendanceSessionSchema = require("../models/attendanceSession");
 const AttendanceSchema = require("../models/attendance");
 const ExamResultSchema = require("../models/examResult.js");
-const PaymentSchema = require("../models/payment");
-const BookSchema = require("../models/book");
+const PaymentSchema = require("../models/payment.js");
+
 const bcrypt = require("bcrypt");
 const path = require("path");
 require("dotenv").config();
@@ -321,14 +322,15 @@ const scanAttendance = async (req, res) => {
     // ===========================
     // Load Books & Payments
     // ===========================
-
     const currentDate = new Date();
 
-    const [books, paidBooks, paidSubscriptions] = await Promise.all([
-      BookSchema.find({
-        grade: student.grade._id,
+    const [assignedBooks, paidBooks, paidSubscriptions] = await Promise.all([
+      BookAssignmentSchema.find({
+        student: student._id,
         isActive: true,
-      }).select("name price"),
+      })
+        .populate("book", "name price")
+        .lean(),
 
       PaymentSchema.find({
         student: student._id,
@@ -348,15 +350,22 @@ const scanAttendance = async (req, res) => {
     // ===========================
     // Unpaid Books
     // ===========================
-
     const paidBookIds = paidBooks.map((e) => e.book.toString());
 
-    const unpaidNotes = books
-      .filter((book) => !paidBookIds.includes(book._id.toString()))
-      .map((book) => ({
-        id: book._id,
-        title: book.name,
-        price: book.price,
+    const unpaidNotes = assignedBooks
+      .filter(
+        (assignment) =>
+          assignment.book &&
+          !paidBookIds.includes(assignment.book._id.toString()),
+      )
+      .sort((a, b) => new Date(a.assignedAt) - new Date(b.assignedAt))
+      .map((assignment) => ({
+        assignmentId: assignment._id,
+        id: assignment.book._id,
+        title: assignment.book.name,
+        price: assignment.book.price,
+        assignedAt: assignment.assignedAt,
+        notes: assignment.notes,
       }));
 
     // ===========================
