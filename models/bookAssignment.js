@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const mongoosePaginate = require("mongoose-paginate-v2");
 
 const BookAssignmentSchema = new mongoose.Schema(
   {
@@ -49,5 +50,7 @@ BookAssignmentSchema.index(
     unique: true,
   },
 );
+
+BookAssignmentSchema.plugin(mongoosePaginate);
 
 module.exports = mongoose.model("bookAssignment", BookAssignmentSchema);

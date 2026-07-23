@@ -9,10 +9,9 @@ const {
 } = require("../controls/bookAssignment.js");
 const { verifyToken } = require("../middlewares/checkAuth.js");
 
-router.post("/assign-groups", verifyToken, assignGroups);
-router.post("/assign-students", verifyToken, assignStudents);
-router.post("/unassign-students", verifyToken, bulkUnassignStudents);
-router.get("/get-unassigned-students", verifyToken, getUnAssignedStudents);
-router.get("/get-assigned-students", verifyToken, getAssignedStudents);
+router.get("/unassigned-students/:bookId", verifyToken, getUnAssignedStudents);
+router.post("/assign-students/:bookId", verifyToken, assignStudents);
+router.get("/assigned-students/:bookId", verifyToken, getAssignedStudents);
+router.post("/unassign-students/:bookId", verifyToken, bulkUnassignStudents);
 
 module.exports = router;
