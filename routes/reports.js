@@ -5,7 +5,10 @@ const {
   getStudentAttendanceDetails,
 } = require("../controls/reports/attendanceReport.js");
 
-const { getPaymentsReport } = require("../controls/reports/paymentReport.js");
+const {
+  getStudentPaymentsDetails,
+  getStudentsFinancialReport,
+} = require("../controls/reports/paymentReport.js");
 const { getExamReport } = require("../controls/reports/examReport.js");
 const { getDashboard } = require("../controls/reports/DashboardReport.js");
 
@@ -14,7 +17,8 @@ const { verifyToken } = require("../middlewares/checkAuth.js");
 
 router.get("/attendance", verifyToken, getAttendanceReport);
 router.get("/attendance/:studentId", verifyToken, getStudentAttendanceDetails);
-router.get("/payments", verifyToken, getPaymentsReport);
+router.get("/payments", verifyToken, getStudentsFinancialReport);
+router.get("/payments/details", verifyToken, getStudentPaymentsDetails);
 router.get("/exams/:examId", verifyToken, getExamReport);
 router.get("/dashboard", verifyToken, getDashboard);
 

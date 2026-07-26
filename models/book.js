@@ -33,7 +33,8 @@ const BookSchema = new mongoose.Schema(
       enum: [
         "Book", // مذكرة
         "Revision", // مراجعة
-        "Booklet", // بوكليت
+        "Story", // قصة
+        "Skills", // مهارات
       ],
       default: "Book",
       index: true,

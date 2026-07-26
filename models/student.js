@@ -23,10 +23,10 @@ const StudentSchema = new mongoose.Schema(
 
     barcode: {
       type: String,
-      required: [true, "Please enter barcode"],
-      unique: true,
+      // required: [true, "Please enter barcode"],
+      // unique: true,
       trim: true,
-      index: true,
+      // index: true,
     },
 
     grade: {

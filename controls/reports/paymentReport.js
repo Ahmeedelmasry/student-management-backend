@@ -3,7 +3,7 @@ const PaymentSchema = require("../../models/payment");
 const BookSchema = require("../../models/book");
 const BookAssignmentSchema = require("../../models/bookAssignment.js");
 
-const getPaymentsReport = async (req, res) => {
+const getStudentPaymentsDetails = async (req, res) => {
   try {
     const {
       searchWord,
@@ -17,6 +17,7 @@ const getPaymentsReport = async (req, res) => {
       toDate,
       page = 1,
       limit = 10,
+      studentId
     } = req.query;
 
     // ==========================================
@@ -33,6 +34,9 @@ const getPaymentsReport = async (req, res) => {
 
     if (group) {
       studentQuery.group = group;
+    }
+    if (studentId) {
+      studentQuery._id = studentId;
     }
 
     if (searchWord) {
@@ -80,7 +84,11 @@ const getPaymentsReport = async (req, res) => {
         .populate("book", "name price")
         .lean(),
 
-      PaymentSchema.find({}).populate("book", "name").lean(),
+      PaymentSchema.find({
+        isActive: true,
+      })
+        .populate("book", "name")
+        .lean(),
     ]);
 
     // ==========================================
@@ -392,6 +400,431 @@ const getPaymentsReport = async (req, res) => {
   }
 };
 
+const getStudentsFinancialReport = async (req, res) => {
+  try {
+    const { searchWord, grade, group, page = 1, limit = 10 } = req.query;
+
+    // ==========================================
+    // Students Query
+    // ==========================================
+
+    const studentQuery = {
+      isActive: true,
+    };
+
+    if (grade) {
+      studentQuery.grade = grade;
+    }
+
+    if (group) {
+      studentQuery.group = group;
+    }
+
+    if (searchWord) {
+      studentQuery.$or = [
+        {
+          fullName: {
+            $regex: searchWord,
+            $options: "i",
+          },
+        },
+        {
+          studentPhone: {
+            $regex: searchWord,
+            $options: "i",
+          },
+        },
+        {
+          parentPhone: {
+            $regex: searchWord,
+            $options: "i",
+          },
+        },
+        {
+          barcode: {
+            $regex: searchWord,
+            $options: "i",
+          },
+        },
+      ];
+    }
+
+    // ==========================================
+    // Load Data
+    // ==========================================
+
+    const [students, bookAssignments, payments] = await Promise.all([
+      StudentSchema.find(studentQuery)
+        .populate("grade")
+        .populate("group", "name monthlyPrice startDate endDate")
+        .lean(),
+
+      BookAssignmentSchema.find({
+        isActive: true,
+      })
+        .populate("book", "name price")
+        .lean(),
+
+      PaymentSchema.find({
+        isActive: true,
+        status: "Paid",
+      })
+        .populate("book", "name")
+        .lean(),
+    ]);
+
+    // ==========================================
+    // Book Assignments Map
+    // ==========================================
+
+    const assignmentMap = {};
+
+    bookAssignments.forEach((assignment) => {
+      const key = assignment.student.toString();
+
+      if (!assignmentMap[key]) {
+        assignmentMap[key] = [];
+      }
+
+      assignmentMap[key].push(assignment);
+    });
+
+    // ==========================================
+    // Payments Map
+    // ==========================================
+
+    const paymentMap = {};
+
+    payments.forEach((payment) => {
+      if (payment.type === "Book") {
+        paymentMap[
+          `book_${payment.student}_${payment.book?._id || payment.book}`
+        ] = payment;
+      }
+
+      if (payment.type === "Subscription") {
+        paymentMap[`sub_${payment.student}_${payment.month}_${payment.year}`] =
+          payment;
+      }
+    });
+
+    // ==========================================
+    // Arabic Months
+    // ==========================================
+
+    const monthNames = {
+      1: "يناير",
+      2: "فبراير",
+      3: "مارس",
+      4: "إبريل",
+      5: "مايو",
+      6: "يونيو",
+      7: "يوليو",
+      8: "أغسطس",
+      9: "سبتمبر",
+      10: "أكتوبر",
+      11: "نوفمبر",
+      12: "ديسمبر",
+    };
+
+    const today = new Date();
+
+    const report = [];
+
+    // ==========================================
+    // Build Report
+    // ==========================================
+
+    for (const student of students) {
+      const studentReport = {
+        student,
+
+        grade: student.grade,
+
+        group: student.group,
+
+        paidBooksCount: 0,
+        unpaidBooksCount: 0,
+
+        paidBooksAmount: 0,
+        unpaidBooksAmount: 0,
+
+        paidSubscriptionsCount: 0,
+        unpaidSubscriptionsCount: 0,
+
+        paidSubscriptionsAmount: 0,
+        unpaidSubscriptionsAmount: 0,
+
+        totalPaid: 0,
+        totalUnpaid: 0,
+
+        books: {
+          paid: [],
+          unpaid: [],
+        },
+
+        subscriptions: {
+          paid: [],
+          unpaid: [],
+        },
+      };
+
+      // ==========================================
+      // لو المجموعة ناقصة تاريخ البداية أو النهاية
+      // ==========================================
+
+      if (!student.group?.startDate || !student.group?.endDate) {
+        report.push(studentReport);
+        continue;
+      }
+
+      // ==========================================
+      // Books
+      // ==========================================
+
+      const studentBooks = assignmentMap[student._id.toString()] || [];
+
+      for (const assignment of studentBooks) {
+        if (!assignment.book) continue;
+
+        const payment =
+          paymentMap[`book_${student._id}_${assignment.book._id}`];
+
+        const amount = Number(payment?.amount ?? assignment.book.price ?? 0);
+
+        if (payment) {
+          studentReport.paidBooksCount++;
+
+          studentReport.paidBooksAmount += amount;
+
+          studentReport.books.paid.push({
+            assignmentId: assignment._id,
+
+            bookId: assignment.book._id,
+
+            name: assignment.book.name,
+
+            amount,
+
+            paymentId: payment._id,
+
+            paymentDate: payment.paymentDate,
+          });
+        } else {
+          studentReport.unpaidBooksCount++;
+
+          studentReport.unpaidBooksAmount += amount;
+
+          studentReport.books.unpaid.push({
+            assignmentId: assignment._id,
+
+            bookId: assignment.book._id,
+
+            name: assignment.book.name,
+
+            amount,
+
+            assignedAt: assignment.assignedAt,
+
+            notes: assignment.notes,
+          });
+        }
+      }
+
+      // ==========================================
+      // Subscriptions
+      // ==========================================
+
+      const groupStartDate = new Date(student.group.startDate);
+
+      const registrationDate = student.registrationDate
+        ? new Date(student.registrationDate)
+        : groupStartDate;
+
+      const startDate =
+        registrationDate > groupStartDate ? registrationDate : groupStartDate;
+
+      const groupEndDate = new Date(student.group.endDate);
+
+      const lastDate = groupEndDate > today ? today : groupEndDate;
+
+      let current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+
+      while (current <= lastDate) {
+        const currentMonth = current.getMonth() + 1;
+
+        const currentYear = current.getFullYear();
+
+        const payment =
+          paymentMap[`sub_${student._id}_${currentMonth}_${currentYear}`];
+
+        const amount = Number(payment?.amount ?? student.group.monthlyPrice);
+
+        if (payment) {
+          studentReport.paidSubscriptionsCount++;
+
+          studentReport.paidSubscriptionsAmount += amount;
+
+          studentReport.subscriptions.paid.push({
+            month: currentMonth,
+
+            year: currentYear,
+
+            title: `${monthNames[currentMonth]} ${currentYear}`,
+
+            amount,
+
+            paymentId: payment._id,
+
+            paymentDate: payment.paymentDate,
+          });
+        } else {
+          studentReport.unpaidSubscriptionsCount++;
+
+          studentReport.unpaidSubscriptionsAmount += amount;
+
+          studentReport.subscriptions.unpaid.push({
+            month: currentMonth,
+
+            year: currentYear,
+
+            title: `${monthNames[currentMonth]} ${currentYear}`,
+
+            amount,
+          });
+        }
+
+        current.setMonth(current.getMonth() + 1);
+      }
+
+      studentReport.totalPaid =
+        studentReport.paidBooksAmount + studentReport.paidSubscriptionsAmount;
+
+      studentReport.totalUnpaid =
+        studentReport.unpaidBooksAmount +
+        studentReport.unpaidSubscriptionsAmount;
+
+      report.push(studentReport);
+    }
+
+    // ==========================================
+    // Summary
+    // ==========================================
+
+    const summary = {
+      totalStudents: report.length,
+
+      paidBooksCount: report.reduce(
+        (sum, item) => sum + item.paidBooksCount,
+        0,
+      ),
+
+      unpaidBooksCount: report.reduce(
+        (sum, item) => sum + item.unpaidBooksCount,
+        0,
+      ),
+
+      paidSubscriptionsCount: report.reduce(
+        (sum, item) => sum + item.paidSubscriptionsCount,
+        0,
+      ),
+
+      unpaidSubscriptionsCount: report.reduce(
+        (sum, item) => sum + item.unpaidSubscriptionsCount,
+        0,
+      ),
+
+      paidBooksAmount: report.reduce(
+        (sum, item) => sum + item.paidBooksAmount,
+        0,
+      ),
+
+      unpaidBooksAmount: report.reduce(
+        (sum, item) => sum + item.unpaidBooksAmount,
+        0,
+      ),
+
+      paidSubscriptionsAmount: report.reduce(
+        (sum, item) => sum + item.paidSubscriptionsAmount,
+        0,
+      ),
+
+      unpaidSubscriptionsAmount: report.reduce(
+        (sum, item) => sum + item.unpaidSubscriptionsAmount,
+        0,
+      ),
+
+      totalPaid: report.reduce((sum, item) => sum + item.totalPaid, 0),
+
+      totalUnpaid: report.reduce((sum, item) => sum + item.totalUnpaid, 0),
+    };
+
+    // ==========================================
+    // Sort
+    // ==========================================
+
+    report.sort((a, b) => {
+      if (b.totalUnpaid !== a.totalUnpaid) {
+        return b.totalUnpaid - a.totalUnpaid;
+      }
+
+      return a.student.fullName.localeCompare(b.student.fullName, "ar");
+    });
+
+    // ==========================================
+    // Pagination
+    // ==========================================
+
+    const currentPage = Number(page);
+
+    const perPage = Number(limit);
+
+    const totalDocs = report.length;
+
+    const totalPages = Math.ceil(totalDocs / perPage);
+
+    const docs = report.slice(
+      (currentPage - 1) * perPage,
+      currentPage * perPage,
+    );
+
+    // ==========================================
+    // Response
+    // ==========================================
+
+    return res.status(200).json({
+      docs,
+
+      totalDocs,
+
+      limit: perPage,
+
+      totalPages,
+
+      page: currentPage,
+
+      pagingCounter: (currentPage - 1) * perPage + 1,
+
+      hasPrevPage: currentPage > 1,
+
+      hasNextPage: currentPage < totalPages,
+
+      prevPage: currentPage > 1 ? currentPage - 1 : null,
+
+      nextPage: currentPage < totalPages ? currentPage + 1 : null,
+
+      summary,
+    });
+  } catch (error) {
+    console.log(error);
+
+    return res.status(500).json({
+      message: "حدث خطأ أثناء استخراج التقرير المالي",
+    });
+  }
+};
+
 module.exports = {
-  getPaymentsReport,
+  getStudentPaymentsDetails,
+  getStudentsFinancialReport,
 };

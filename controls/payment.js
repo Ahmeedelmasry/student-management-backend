@@ -12,8 +12,8 @@ const validatCreation = (error, body) => {
 
   if (error.code == 11000) {
     console.log(error);
-    errors.userName = "name is already in use";
-    mainMsg = "name is already in use";
+    errors.userName = "تم الدفع من قبل لهذا الاشتراك او هذه المذكرة";
+    mainMsg = "تم الدفع من قبل لهذا الاشتراك او هذه المذكرة";
   }
   for (const val of Object.entries(error.errors ? error.errors : body)) {
     if (error.errors && error.errors[val[0]]) {
@@ -105,6 +105,7 @@ const getItems = async (req, res) => {
       grade,
       group,
       type,
+      book,
       paymentMethod,
       month,
       year,
@@ -170,6 +171,10 @@ const getItems = async (req, res) => {
     // Type
     if (type) {
       query.type = type;
+    }
+
+    if (book) {
+      query.book = book;
     }
 
     // Payment Method

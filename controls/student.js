@@ -17,8 +17,8 @@ const validatCreation = (error, body) => {
 
   if (error.code == 11000) {
     console.log(error);
-    errors.userName = "name is already in use";
-    mainMsg = "name is already in use";
+    errors.userName = "Barcode is already in use";
+    mainMsg = "Barcode is already in use";
   }
   for (const val of Object.entries(error.errors ? error.errors : body)) {
     if (error.errors && error.errors[val[0]]) {

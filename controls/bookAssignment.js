@@ -1,6 +1,7 @@
 const BookSchema = require("../models/book");
 const BookAssignmentSchema = require("../models/bookAssignment");
 const StudentSchema = require("../models/student");
+const PaymentSchema = require("../models/payment");
 
 // ==========================================
 // Assign Book To Students
@@ -128,7 +129,14 @@ const getUnAssignedStudents = async (req, res) => {
   try {
     const { bookId } = req.params;
 
-    const { group, barcode, searchWord, page = 1, limit = 10 } = req.query;
+    const {
+      group,
+      barcode,
+      searchWord,
+      page = 1,
+      limit = 10,
+      paymentStatus,
+    } = req.query;
 
     // ==========================================
     // Validate
@@ -241,12 +249,52 @@ const getUnAssignedStudents = async (req, res) => {
         },
       ],
     };
-
     // ==========================================
     // Data
     // ==========================================
 
     const result = await StudentSchema.paginate(query, options);
+
+    let docs = result.docs.map((e) => ({
+      ...e._doc,
+    }));
+
+    const allBookPayments = await PaymentSchema.find({
+      book: bookId,
+      type: "Book",
+      isActive: true,
+    }).select("student paymentDate");
+
+    docs.forEach((student) => {
+      const payment = allBookPayments.find(
+        (e) => e.student.toString() === student._id.toString(),
+      );
+
+      if (payment) {
+        student.isPaid = true;
+        student.paymentDate = payment.paymentDate;
+      }
+    });
+
+    // ==========================================
+    // Payment Status Filter
+    // ==========================================
+
+    if (paymentStatus === "paid") {
+      docs = docs.filter((e) => e.isPaid);
+    }
+
+    if (paymentStatus === "unpaid") {
+      docs = docs.filter((e) => !e.isPaid);
+    }
+
+    // ==========================================
+    // Update Pagination
+    // ==========================================
+
+    result.docs = docs;
+    result.totalDocs = docs.length;
+    result.totalPages = Math.ceil(docs.length / Number(limit));
 
     return res.status(200).json(result);
   } catch (error) {
@@ -266,7 +314,14 @@ const getAssignedStudents = async (req, res) => {
   try {
     const { bookId } = req.params;
 
-    const { group, barcode, searchWord, page = 1, limit = 10 } = req.query;
+    const {
+      group,
+      barcode,
+      searchWord,
+      page = 1,
+      limit = 10,
+      paymentStatus,
+    } = req.query;
 
     // ==========================================
     // Validate
@@ -379,12 +434,52 @@ const getAssignedStudents = async (req, res) => {
         },
       ],
     };
-
     // ==========================================
     // Data
     // ==========================================
 
     const result = await StudentSchema.paginate(query, options);
+
+    let docs = result.docs.map((e) => ({
+      ...e._doc,
+    }));
+
+    const allBookPayments = await PaymentSchema.find({
+      book: bookId,
+      type: "Book",
+      isActive: true,
+    }).select("student paymentDate");
+
+    docs.forEach((student) => {
+      const payment = allBookPayments.find(
+        (e) => e.student.toString() === student._id.toString(),
+      );
+
+      if (payment) {
+        student.isPaid = true;
+        student.paymentDate = payment.paymentDate;
+      }
+    });
+
+    // ==========================================
+    // Payment Status Filter
+    // ==========================================
+
+    if (paymentStatus === "paid") {
+      docs = docs.filter((e) => e.isPaid);
+    }
+
+    if (paymentStatus === "unpaid") {
+      docs = docs.filter((e) => !e.isPaid);
+    }
+
+    // ==========================================
+    // Update Pagination
+    // ==========================================
+
+    result.docs = docs;
+    result.totalDocs = docs.length;
+    result.totalPages = Math.ceil(docs.length / Number(limit));
 
     return res.status(200).json(result);
   } catch (error) {

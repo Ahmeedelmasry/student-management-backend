@@ -94,12 +94,30 @@ PaymentSchema.index(
     type: 1,
     month: 1,
     year: 1,
+    isActive: 1,
   },
   {
     unique: true,
     partialFilterExpression: {
       type: "Subscription",
       status: "Paid",
+    },
+  },
+);
+
+PaymentSchema.index(
+  {
+    student: 1,
+    type: 1,
+    book: 1,
+    isActive: 1,
+  },
+  {
+    unique: true,
+    partialFilterExpression: {
+      type: "Book",
+      status: "Paid",
+      isActive: true,
     },
   },
 );
