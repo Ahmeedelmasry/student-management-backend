@@ -11,6 +11,7 @@ const assignStudents = async (req, res) => {
   try {
     const book = req.params.bookId;
     const students = req.body;
+    const { payNow } = req.query;
 
     // ==========================================
     // Validate
@@ -53,7 +54,7 @@ const assignStudents = async (req, res) => {
       },
       isActive: true,
     })
-      .select("_id")
+      .select("_id grade group")
       .lean();
 
     if (!studentDocs.length) {
@@ -89,6 +90,8 @@ const assignStudents = async (req, res) => {
       .map((student) => ({
         student: student._id,
         book,
+        group: student.group,
+        grade: student.grade,
       }));
 
     if (!assignments.length) {
@@ -102,6 +105,33 @@ const assignStudents = async (req, res) => {
     // ==========================================
 
     await BookAssignmentSchema.insertMany(assignments);
+
+    if (payNow) {
+      assignments.forEach(async (el) => {
+        const exists = await PaymentSchema.findOne({
+          book: el.book,
+          student: el.student,
+          isActive: true,
+        });
+        if (!exists) {
+          const paymentBody = {
+            student: el.student,
+            group: el.group,
+            grade: el.grade,
+            type: "Book",
+            month: new Date().getMonth() + 1,
+            year: new Date().getFullYear(),
+            book: el.book,
+            paymentMethod: "Cash",
+            amount: bookData.price,
+          };
+
+          const saveData = await PaymentSchema.create(paymentBody);
+
+          await saveData.save();
+        }
+      });
+    }
 
     // ==========================================
     // Response
