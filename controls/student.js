@@ -240,6 +240,7 @@ const getItems = async (req, res) => {
 const scanAttendance = async (req, res) => {
   try {
     const { barcode } = req.params;
+    const { attendAnyway } = req.query;
 
     if (!barcode) {
       return res.status(400).json({
@@ -304,20 +305,6 @@ const scanAttendance = async (req, res) => {
         message: "تم تسجيل حضور الطالب بالفعل",
       });
     }
-
-    // ===========================
-    // Save Attendance
-    // ===========================
-
-    await AttendanceSchema.create({
-      session: session._id,
-      student: student._id,
-      grade: student.grade._id,
-      group: student.group._id,
-      status: "Present",
-      scannedAt: new Date(),
-      createdBy: req.user?._id,
-    });
 
     // ===========================
     // Load Books & Payments
@@ -436,12 +423,40 @@ const scanAttendance = async (req, res) => {
     }
 
     // ===========================
-    // Response
+    // Check Last 2 Sessions
     // ===========================
 
-    return res.status(200).json({
-      message: "تم تسجيل الحضور بنجاح",
+    const lastSessions = await AttendanceSessionSchema.find({
+      group: student.group._id,
+      isActive: true,
+      sessionDate: {
+        $lt: session.sessionDate,
+      },
+    })
+      .sort({ sessionDate: -1 })
+      .limit(2)
+      .select("_id sessionDate title");
 
+    if (lastSessions.length > 2) {
+      lastSessions = lastSessions.slice(0, 2);
+    }
+    const sessionIds = lastSessions.map((e) => e._id);
+
+    const attendedSessions = await AttendanceSchema.find({
+      student: student._id,
+      session: { $in: sessionIds },
+      isActive: true,
+    }).select("session");
+
+    const attendedIds = attendedSessions.map((e) => e.session.toString());
+
+    const absentSessions = lastSessions.filter(
+      (e) => !attendedIds.includes(e._id.toString()),
+    );
+
+    const absentCount = absentSessions.length;
+
+    const response = {
       student: {
         _id: student._id,
         name: student.fullName,
@@ -457,11 +472,37 @@ const scanAttendance = async (req, res) => {
 
         unpaidNotes,
         unpaidMonths,
+        lastSessionsAbsence: absentSessions,
       },
-    });
+    };
+
+    if (absentCount === 2 && attendAnyway !== "true") {
+      response.message = "الطالب غائب آخر حصتين، هل تريد تسجيل الحضور رغم ذلك؟";
+      response.showErr = true;
+    } else {
+      // ===========================
+      // Save Attendance
+      // ===========================
+      await AttendanceSchema.create({
+        session: session._id,
+        student: student._id,
+        grade: student.grade._id,
+        group: student.group._id,
+        status: "Present",
+        scannedAt: new Date(),
+        createdBy: req.user?._id,
+      });
+      response.message = "تم تسجيل الحضور بنجاح";
+      response.showErr = false;
+    }
+
+    // ===========================
+    // Response
+    // ===========================
+
+    return res.status(200).json(response);
   } catch (error) {
     console.log(error);
-
     return res.status(500).json({
       message: "حدث خطأ أثناء تسجيل الحضور",
     });
