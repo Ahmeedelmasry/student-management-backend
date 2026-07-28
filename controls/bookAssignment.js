@@ -529,6 +529,7 @@ const bulkUnassignStudents = async (req, res) => {
   try {
     const studentIds = req.body;
     const bookId = req.params.bookId;
+    const { cancelPayment } = req.query;
 
     // ==========================================
     // Validation
@@ -557,6 +558,23 @@ const bulkUnassignStudents = async (req, res) => {
         $in: studentIds,
       },
     });
+
+    if (cancelPayment) {
+      for (let i = 0; i < studentIds.length; i++) {
+        const student = studentIds[i];
+        const exists = await PaymentSchema.findOne({
+          book: bookId,
+          student: student,
+          isActive: true,
+        });
+        if (exists) {
+          const saveData = await PaymentSchema.updateOne(
+            { _id: exists._id },
+            { isActive: false },
+          );
+        }
+      }
+    }
 
     return res.status(200).json({
       modifiedCount: result.modifiedCount,

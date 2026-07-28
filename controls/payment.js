@@ -12,7 +12,6 @@ const validatCreation = (error, body) => {
 
   if (error.code == 11000) {
     console.log(error);
-    errors.userName = "تم الدفع من قبل لهذا الاشتراك او هذه المذكرة";
     mainMsg = "تم الدفع من قبل لهذا الاشتراك او هذه المذكرة";
   }
   for (const val of Object.entries(error.errors ? error.errors : body)) {
@@ -28,7 +27,7 @@ const validatCreation = (error, body) => {
   };
 };
 
-// Create User
+// Create Item
 const createItem = async (req, res) => {
   try {
     const body = {
@@ -39,6 +38,37 @@ const createItem = async (req, res) => {
 
     return res.status(200).json({ message: "تم الدفع بنجاح" });
   } catch (error) {
+    const errors = validatCreation(error, req.body);
+    res.status(400).json({ errors: errors.errors, message: errors.message });
+  }
+};
+
+const bulkBookPayment = async (req, res) => {
+  try {
+    const rows = req.body.rows;
+    if (!rows || !rows.length)
+      return res.status(400).json({ message: "لم يتم استقبال بيانات للدفع" });
+
+    const items = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const e = rows[i];
+      const paidBefore = await PaymentSchema.findOne({
+        book: e.book,
+        student: e.student,
+        isActive: true,
+      });
+
+      if (!paidBefore) {
+        items.push(e);
+      }
+    }
+
+    const set = await PaymentSchema.insertMany(items);
+
+    return res.status(200).json({ message: "تم الدفع بنجاح" });
+  } catch (error) {
+    console.log(error);
     const errors = validatCreation(error, req.body);
     res.status(400).json({ errors: errors.errors, message: errors.message });
   }
@@ -252,4 +282,5 @@ module.exports = {
   getItems,
   updateItem,
   deleteItem,
+  bulkBookPayment,
 };
