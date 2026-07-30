@@ -181,7 +181,10 @@ const getExamStudents = async (req, res) => {
     const students = await StudentSchema.find({
       group: { $in: groups },
       isActive: true,
-      _id: { $nin: studentIds }, // استبعاد الطلاب اللي اتسجلوا
+      _id: { $nin: studentIds },
+      registrationDate: {
+        $lt: exam.createdAt,
+      },
     })
       .populate("grade", "name")
       .populate("group", "name")

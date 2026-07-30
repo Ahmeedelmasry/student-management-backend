@@ -265,8 +265,14 @@ const getItems = async (req, res) => {
     };
 
     const result = await PaymentSchema.paginate(query, options);
+    const totalsData = await PaymentSchema.find(query);
 
-    res.status(200).json(result);
+    let totalAmount = 0;
+
+    totalsData.forEach((e) => {
+      totalAmount += e.amount;
+    });
+    res.status(200).json({ ...result, totalAmount });
   } catch (error) {
     console.error(error);
     res.status(500).json({

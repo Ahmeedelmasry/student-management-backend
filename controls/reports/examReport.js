@@ -108,8 +108,6 @@ const getExamReport = async (req, res) => {
         .lean(),
     ]);
 
-    console.log(results);
-
     // ==========================================
     // Result Map
     // ==========================================
