@@ -131,6 +131,7 @@ const updateExamResults = async (req, res) => {
         update: {
           $set: {
             score: item.score,
+            isAbsent: item.isAbsent,
           },
         },
       },
