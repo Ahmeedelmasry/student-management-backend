@@ -7,6 +7,7 @@ const {
   updateItem,
   deleteItem,
   scanAttendance,
+  getStudentsWithMultipleFilters,
 } = require("../controls/student.js");
 const {
   generateMonthlyStudentsReport,
@@ -17,6 +18,7 @@ router.post("/", verifyToken, createItem);
 router.post("/scan/:barcode", verifyToken, scanAttendance);
 router.get("/", verifyToken, getItems);
 router.get("/:id", verifyToken, getItem);
+router.get("/all/multiple-filters", verifyToken, getStudentsWithMultipleFilters);
 router.post(
   "/monthly-reports/:gradeId",
   verifyToken,

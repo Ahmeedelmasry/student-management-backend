@@ -237,6 +237,123 @@ const getItems = async (req, res) => {
   }
 };
 
+const getStudentsWithMultipleFilters = async (req, res) => {
+    console.log('here');
+  try {
+    const { groupIds, grade, searchWord, page = 1, limit = 10 } = req.query;
+
+    const query = {
+      isActive: true,
+    };
+
+    // ==========================================
+    // Group Filter
+    // ==========================================
+
+    if (groupIds) {
+      let groups = groupIds;
+
+      // If query comes as:
+      // ?groupIds=id1,id2,id3
+      if (typeof groups === "string") {
+        groups = groups.split(",").filter(Boolean);
+      }
+
+      // If only one group ID was sent
+      // ?groupIds=id1
+      if (!Array.isArray(groups)) {
+        groups = [groups];
+      }
+
+      if (groups.length) {
+        query.group = {
+          $in: groups,
+        };
+      }
+    }
+
+    // ==========================================
+    // Grade Filter
+    // ==========================================
+
+    if (grade) {
+      query.grade = grade;
+    }
+
+    // ==========================================
+    // Search
+    // ==========================================
+
+    if (searchWord?.trim()) {
+      const search = searchWord.trim();
+
+      query.$or = [
+        {
+          fullName: {
+            $regex: search,
+            $options: "i",
+          },
+        },
+        {
+          studentPhone: {
+            $regex: search,
+            $options: "i",
+          },
+        },
+        {
+          parentPhone: {
+            $regex: search,
+            $options: "i",
+          },
+        },
+        {
+          barcode: {
+            $regex: search,
+            $options: "i",
+          },
+        },
+      ];
+    }
+
+    // ==========================================
+    // Options
+    // ==========================================
+
+    const options = {
+      page: Number(page),
+      limit: Number(limit),
+
+      sort: {
+        fullName: 1,
+      },
+
+      populate: [
+        {
+          path: "grade",
+          select: "name",
+        },
+        {
+          path: "group",
+          select: "name",
+        },
+      ],
+    };
+
+    // ==========================================
+    // Get Students
+    // ==========================================
+
+    const result = await StudentSchema.paginate(query, options);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.log(error);
+
+    return res.status(500).json({
+      message: "حدث خطأ أثناء جلب الطلاب",
+    });
+  }
+};
+
 const scanAttendance = async (req, res) => {
   try {
     const { barcode } = req.params;
@@ -516,4 +633,5 @@ module.exports = {
   updateItem,
   deleteItem,
   scanAttendance,
+  getStudentsWithMultipleFilters,
 };
