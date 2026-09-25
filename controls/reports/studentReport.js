@@ -6,6 +6,7 @@ const PaymentSchema = require("../../models/payment");
 const BookAssignmentSchema = require("../../models/bookAssignment");
 const ExamSchema = require("../../models/exam");
 const ExamResultSchema = require("../../models/examResult");
+const MonthlyReportSchema = require("../../models/monthlyReport");
 
 // ==========================================
 // PDF Generation
@@ -644,6 +645,8 @@ const generateMonthlyStudentsReport = async (req, res) => {
     // ==========================================
     // Response
     // ==========================================
+
+    await MonthlyReportSchema.insertMany(reports);
 
     return res.status(200).json({
       message: "تم تجهيز تقارير الطلاب وحفظ ملفات PDF بنجاح",

@@ -17,7 +17,7 @@ router.post("/", verifyToken, createItem);
 router.post("/scan/:barcode", verifyToken, scanAttendance);
 router.get("/", verifyToken, getItems);
 router.get("/:id", verifyToken, getItem);
-router.get(
+router.post(
   "/monthly-reports/:gradeId",
   verifyToken,
   generateMonthlyStudentsReport,

@@ -46,6 +46,7 @@ app.use(cookieParser());
 
 // Public Files
 app.use(express.static("assets"));
+app.use("/storage", express.static(path.join(__dirname, "storage")));
 
 // Routes
 app.use("/auth", auth);
