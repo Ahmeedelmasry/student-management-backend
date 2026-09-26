@@ -7,6 +7,10 @@ const BookAssignmentSchema = require("../../models/bookAssignment");
 const ExamSchema = require("../../models/exam");
 const ExamResultSchema = require("../../models/examResult");
 const MonthlyReportSchema = require("../../models/monthlyReport");
+const axios = require("axios");
+require("dotenv").config();
+const fs = require("fs");
+const path = require("path");
 
 // ==========================================
 // PDF Generation
@@ -647,6 +651,15 @@ const generateMonthlyStudentsReport = async (req, res) => {
     // ==========================================
 
     await MonthlyReportSchema.insertMany(reports);
+    reports.forEach((report) => {
+      const safeFileName = "Student-Monthly-Report.pdf";
+      sendReportOnWhatsApp(
+        report.student.parentPhone,
+        `${process.env.SERVER_DOMAIN}/${report.pdf.path}`,
+        safeFileName,
+        `تقرير مفصل للطالب ${report.student.fullName}`,
+      );
+    });
 
     return res.status(200).json({
       message: "تم تجهيز تقارير الطلاب وحفظ ملفات PDF بنجاح",
@@ -665,6 +678,68 @@ const generateMonthlyStudentsReport = async (req, res) => {
     return res.status(500).json({
       message: "حدث خطأ أثناء تجهيز تقارير الطلاب",
     });
+  }
+};
+
+const normalizePhone = (phone) => {
+  if (!phone) return null;
+
+  // Remove spaces, dashes, parentheses, and leading +
+  let cleaned = phone.replace(/[\s\-()]/g, "").replace(/^\+/, "");
+
+  // If number starts with 0 and looks local (e.g. Egyptian numbers), swap with country code
+  if (cleaned.startsWith("0")) {
+    cleaned = "20" + cleaned.slice(1); // adjust "20" to your country code
+  }
+
+  return cleaned;
+};
+
+const urlToLocalPath = (fileUrl) => {
+  const urlObj = new URL(fileUrl);
+  const relativePath = urlObj.pathname.replace(/^\/storage\//, "");
+  return path.join(__dirname, "..", "..", "storage", relativePath);
+};
+
+
+const sendReportOnWhatsApp = async (parentPhone, localFilePath, fileName, caption) => {
+  const instanceId = process.env.ULTRAMSG_INSTANCE_ID;
+  const token = process.env.ULTRAMSG_TOKEN;
+  const fileUrl = urlToLocalPath(localFilePath.replaceAll("\\", "/"));
+
+  const chatId = normalizePhone(parentPhone); // plain digits, e.g. "201211297338" — no @c.us
+
+  if (!chatId) {
+    return { success: false, reason: "رقم هاتف غير صالح" };
+  }
+
+  if (!fs.existsSync(fileUrl)) {
+    return { success: false, reason: "ملف PDF غير موجود" };
+  }
+
+  try {
+    const fileBuffer = fs.readFileSync(fileUrl);
+    const base64Document = `data:application/pdf;base64,${fileBuffer.toString("base64")}`;
+
+    const response = await axios.post(
+      `https://api.ultramsg.com/${instanceId}/messages/document`,
+      {
+        token,
+        to: chatId,
+        filename: fileName,
+        document: base64Document,
+        caption,
+      },
+      {
+        headers: { "Content-Type": "application/json" },
+        timeout: 30000,
+      },
+    );
+
+    return { success: true, messageId: response.data?.id || response.data };
+  } catch (error) {
+    console.log(`WhatsApp send failed for ${chatId}:`, error?.response?.data || error.message);
+    return { success: false, reason: error?.response?.data?.error || error.message };
   }
 };
 

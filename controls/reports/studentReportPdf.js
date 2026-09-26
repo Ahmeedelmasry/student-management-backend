@@ -42,7 +42,7 @@ const generateSingleStudentPdf = async ({
 }) => {
   const html = buildStudentReportHTML(report, grade, period, {
     subjectName: "اللغة الانجليزية",
-    teacherName: "مستر هشام عبيد",
+    teacherName: "مستر عبدالله هنون",
     teacherPhoto: `${process.env.SERVER_DOMAIN}/mr-image.png`,
   });
 
