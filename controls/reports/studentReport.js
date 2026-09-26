@@ -59,7 +59,7 @@ const generateMonthlyStudentsReport = async (req, res) => {
 
     const today = new Date();
 
-    const reportMonth = month ? Number(month - 1) : today.getMonth();
+    const reportMonth = month ? Number(month) : today.getMonth();
 
     const reportYear = year ? Number(year) : today.getFullYear();
 
